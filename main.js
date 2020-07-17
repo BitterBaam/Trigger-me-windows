@@ -1,9 +1,14 @@
 const electron = require('electron')
+const { ipcMain } = require('electron')
 const http = require('http')
 const express = require('express')
 const expressApp = express()
 const cors = require('cors')
 const router = express.Router()
+const path = require('path')
+const fs = require('fs')
+const reletiveDir = 'file'
+const directoryPath = path.join(__dirname, reletiveDir)
 
 const { app, BrowserWindow } = require('electron')
 
@@ -19,6 +24,20 @@ function createWindow () {
 
   // and load the index.html of the app.
   win.loadFile('index.html')
+
+  win.webContents.on('did-finish-load', () => {
+    fs.readdir(directoryPath, function (err, files) {
+      if (err) {
+          return console.log('Unable to scan directory: ' + err)
+      } 
+      let objToSend = files.map(function (file) {
+        let fileLocation = reletiveDir + '/' + file
+        return {name: file, location: fileLocation}
+      })
+      console.log(objToSend)
+      win.webContents.send('onSoundData', objToSend)
+    })
+  })
 }
 
 app.whenReady().then(createWindow)
@@ -40,6 +59,19 @@ app.on('activate', () => {
         createWindow()
     }
 })
+
+/*
+
+ipcMain.on('asynchronous-message', (event, arg) => {
+  console.log(arg) // prints "ping"
+  event.reply('asynchronous-reply', 'pong')
+})
+
+ipcMain.on('synchronous-message', (event, arg) => {
+  console.log(arg) // prints "ping"
+  event.returnValue = 'pong'
+})
+*/
   
   // In this file you can include the rest of your app's specific main process
   // code. You can also put them in separate files and require them here.
